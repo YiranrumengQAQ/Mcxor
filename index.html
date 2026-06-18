@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC存档解密工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js">
+    </script>
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --surface: rgba(255, 255, 255, 0.72);
+            --surface-solid: #ffffff;
+            --border: rgba(148, 163, 184, 0.24);
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --accent-1: #7c3aed;
+            --accent-2: #6366f1;
+            --accent-3: #3b82f6;
+            --gradient-accent: linear-gradient(135deg, #7c3aed 0%, #6366f1 35%, #3b82f6 100%);
+            --gradient-glow: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(99, 102, 241, 0.08) 40%, rgba(59, 130, 246, 0.14) 100%);
+            --gradient-highlight: linear-gradient(160deg, #8b5cf6 0%, #6366f1 30%, #60a5fa 70%, #818cf8 100%);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+            --radius-sm: 10px;
+            --radius: 16px;
+            --radius-lg: 22px;
+            --radius-xl: 28px;
+            --font: 'Inter', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+            --transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.42s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0b0f1a;
+            --surface: rgba(22, 27, 44, 0.7);
+            --surface-solid: #161b2c;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #e8ecf4;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #5c6b80;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background var(--transition-slow), color var(--transition-slow);
+            line-height: 1.5;
+            overflow-x: hidden;
+            padding: clamp(12px, 3vw, 28px);
+            padding-bottom: clamp(60px, 8vh, 100px);
+            background-image: radial-gradient(ellipse at 30% 10%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 85%, rgba(59, 130, 246, 0.05) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 70%);
+            background-attachment: fixed;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(124, 58, 237, 0.25);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(124, 58, 237, 0.45);
+        }
+
+        .app-wrapper {
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(14px, 2.5vw, 22px);
+        }
+
+        .app-header {
+            text-align: center;
+            padding: clamp(20px, 4vw, 36px) clamp(12px, 3vw, 24px);
+            position: relative;
+        }
+        .app-header .badge {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.08);
+            border: 1px solid rgba(124, 58, 237, 0.18);
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 14px;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .app-header h1 {
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-weight: 720;
+            letter-spacing: -0.02em;
+            background: var(--gradient-highlight);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            line-height: 1.25;
+        }
+        .app-header .subtitle {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            max-width: 420px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .glass-card {
+            background: var(--surface);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            padding: clamp(18px, 3.5vw, 30px);
+            transition: all var(--transition-slow);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-accent);
+            opacity: 0.55;
+            border-radius: 3px 3px 0 0;
+            pointer-events: none;
+        }
+        .glass-card:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(124, 58, 237, 0.2);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: clamp(26px, 5vw, 44px) clamp(16px, 3vw, 28px);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: rgba(124, 58, 237, 0.015);
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: #8b5cf6;
+            background: rgba(124, 58, 237, 0.05);
+            transform: translateY(-1px);
+        }
+        .upload-zone.drag-over {
+            border-style: solid;
+            background: rgba(124, 58, 237, 0.08);
+            box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.04);
+        }
+        .upload-zone .icon-wrap {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            background: var(--gradient-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform var(--transition);
+        }
+        .upload-zone:hover .icon-wrap {
+            transform: scale(1.06);
+        }
+        .upload-zone .icon-wrap svg {
+            width: 26px;
+            height: 26px;
+            stroke: #7c3aed;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .upload-zone .zone-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .upload-zone .zone-hint {
+            font-size: 0.82rem;
+            color: var(--text-tertiary);
+        }
+        #fileInputRef {
+            display: none;
+        }
+
+        .file-info-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(124, 58, 237, 0.04);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            transition: all var(--transition);
+        }
+        .file-info-bar .fi-name {
+            flex: 1;
+            font-weight: 500;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .file-info-bar .fi-size {
+            color: var(--text-secondary);
+            white-space: nowrap;
+            font-size: 0.82rem;
+        }
+        .file-info-bar .fi-remove {
+            flex-shrink: 0;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            border-radius: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.06);
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .file-info-bar .fi-remove:hover {
+            background: rgba(239, 68, 68, 0.14);
+            border-color: #ef4444;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 11px 22px;
+            border-radius: 24px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+            white-space: nowrap;
+            font-family: var(--font);
+            letter-spacing: 0.01em;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: var(--gradient-accent);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 6px 22px rgba(124, 58, 237, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-primary:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(30%);
+            pointer-events: none;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .btn-ghost:hover {
+            border-color: #8b5cf6;
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.04);
+        }
+        .btn-sm {
+            padding: 7px 15px;
+            font-size: 0.8rem;
+            border-radius: 18px;
+        }
+        .btn-block {
+            width: 100%;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+        .btn-row .btn-primary {
+            flex: 1;
+            min-width: 130px;
+        }
+
+        .key-section {
+            margin-top: 18px;
+            padding: 16px;
+            border-radius: var(--radius);
+            background: rgba(251, 191, 36, 0.04);
+            border: 1px solid rgba(251, 191, 36, 0.22);
+        }
+        .key-section .key-label {
+            font-weight: 600;
+            font-size: 0.88rem;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .key-section .key-row {
+            display: flex;
+            gap: 10px;
+        }
+        .key-section input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-solid);
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: var(--font-mono);
+            outline: none;
+            transition: all var(--transition);
+            letter-spacing: 0.04em;
+            min-width: 0;
+        }
+        .key-section input:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
+        }
+        .key-section input::placeholder {
+            color: var(--text-tertiary);
+            letter-spacing: 0.02em;
+            font-family: var(--font);
+        }
+
+        .progress-wrap {
+            margin-top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .progress-bar-outer {
+            height: 5px;
+            background: var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background: var(--gradient-accent);
+            border-radius: 8px;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 0;
+        }
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .progress-file {
+            font-size: 0.76rem;
+            color: var(--text-tertiary);
+            word-break: break-all;
+            opacity: 0.85;
+        }
+
+        .result-box {
+            margin-top: 18px;
+            padding: 18px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+        }
+        .result-box.success {
+            border-color: rgba(34, 197, 94, 0.35);
+            background: rgba(34, 197, 94, 0.04);
+        }
+        .result-box.error {
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.04);
+        }
+        .result-box h3 {
+            font-size: 1.05rem;
+            font-weight: 650;
+            margin-bottom: 10px;
+        }
+        .result-box.success h3 {
+            color: #16a34a;
+        }
+        .result-box.error h3 {
+            color: #dc2626;
+        }
+        .result-box .detail-row {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            line-height: 1.5;
+        }
+        .result-box .key-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(124, 58, 237, 0.06);
+            border: 1px solid rgba(124, 58, 237, 0.18);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            margin: 10px 0;
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            word-break: break-all;
+            letter-spacing: 0.03em;
+        }
+        .key-block .key-val {
+            flex: 1;
+            min-width: 0;
+            color: var(--text);
+        }
+        .key-block .copy-btn {
+            flex-shrink: 0;
+            padding: 5px 12px;
+            font-size: 0.76rem;
+            border-radius: 14px;
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            background: rgba(124, 58, 237, 0.08);
+            color: #7c3aed;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .key-block .copy-btn:hover {
+            background: rgba(124, 58, 237, 0.18);
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            transition: opacity var(--transition-slow);
+        }
+        .modal-content {
+            background: var(--surface);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 480px;
+            max-height: 82vh;
+            overflow-y: auto;
+            padding: clamp(18px, 4vw, 28px);
+            position: relative;
+            transition: transform var(--transition-slow);
+        }
+        .modal-content h2 {
+            font-size: 1.2rem;
+            font-weight: 680;
+            margin-bottom: 14px;
+            letter-spacing: -0.01em;
+        }
+        .modal-content p,
+        .modal-content li {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .modal-content ol {
+            padding-left: 18px;
+            margin: 8px 0 16px;
+        }
+        .modal-content li {
+            margin-bottom: 6px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            line-height: 1;
+        }
+        .modal-close:hover {
+            background: rgba(124, 58, 237, 0.1);
+            color: #7c3aed;
+            transform: rotate(90deg);
+        }
+        .modal-footer-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        /* ---- 广告容器（完全无特征） ---- */
+        .ad-holder {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-slow);
+        }
+        .ad-holder iframe {
+            border: 0;
+            padding: 0;
+            width: 70%;
+            height: auto;
+            overflow: hidden;
+            display: block;
+            margin: 0 auto;
+            background: transparent;
+        }
+        @media (max-width: 600px) {
+            .ad-holder iframe {
+                width: 85%;
+            }
+        }
+
+        .footer-bar {
+            position: fixed;
+            bottom: clamp(10px, 2.5vw, 18px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 6px 10px;
+            box-shadow: var(--shadow-sm);
+            z-index: 100;
+            transition: all var(--transition-slow);
+        }
+        .footer-bar .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            flex-shrink: 0;
+        }
+        .footer-bar .icon-btn:hover {
+            background: rgba(124, 58, 237, 0.08);
+            color: #7c3aed;
+        }
+        .footer-bar .icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .footer-divider {
+            width: 1px;
+            height: 18px;
+            background: var(--border);
+            margin: 0 2px;
+            flex-shrink: 0;
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity var(--transition-slow), transform var(--transition-slow);
+        }
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(8px) scale(0.98);
+        }
+
+        .confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .confirm-dialog {
+            background: var(--surface);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: clamp(16px, 3vw, 24px);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .confirm-dialog p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .confirm-dialog .cf-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 600px) {
+            .glass-card {
+                border-radius: var(--radius-lg);
+                padding: 16px;
+            }
+            .upload-zone {
+                padding: 24px 14px;
+                border-radius: var(--radius);
+            }
+            .upload-zone .icon-wrap {
+                width: 44px;
+                height: 44px;
+            }
+            .upload-zone .icon-wrap svg {
+                width: 22px;
+                height: 22px;
+            }
+            .btn-row {
+                flex-direction: column;
+            }
+            .btn-row .btn-primary,
+            .btn-row .btn-ghost {
+                width: 100%;
+                justify-content: center;
+            }
+            .key-section .key-row {
+                flex-direction: column;
+            }
+            .file-info-bar {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .file-info-bar .fi-name {
+                flex: 1 1 100%;
+            }
+            .footer-bar {
+                padding: 4px 6px;
+                gap: 2px;
+                border-radius: 22px;
+            }
+            .footer-bar .icon-btn {
+                width: 30px;
+                height: 30px;
+            }
+            .footer-bar .icon-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            .footer-divider {
+                height: 14px;
+                margin: 0 1px;
+            }
+            .modal-content {
+                max-width: 95vw;
+                max-height: 88vh;
+                border-radius: var(--radius-lg);
+            }
+            .ad-holder iframe {
+                width: 85%;
+            }
+        }
+        @media (min-width: 1400px) {
+            .app-wrapper {
+                max-width: 780px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- header -->
+        <header class="app-header">
+            <span class="badge">存档解密</span>
+            <h1>MC存档解密工具</h1>
+            <p class="subtitle">安全、快速处理网易版存档，支持批量解密，所有操作均在本地完成</p>
+        </header>
+
+        <!-- main card -->
+        <div class="glass-card">
+            <!-- upload -->
+            <div class="upload-zone"
+            :class="{ 'drag-over': isDragging }"
+            @click="triggerFileInput"
+            @dragover.prevent="isDragging = true"
+            @dragleave.prevent="isDragging = false"
+            @drop.prevent="handleDrop">
+            <div class="icon-wrap">
+                <svg viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <p class="zone-title">点击或拖拽文件到此处</p>
+            <p class="zone-hint">仅支持 .zip 格式的存档文件</p>
+        </div>
+        <input type="file" id="fileInputRef" accept=".zip" @change="onFilePicked" ref="fileInputRef">
+
+        <!-- file info -->
+        <div class="file-info-bar" v-if="selectedFile">
+            <span class="fi-name">{{ selectedFile.name }}</span>
+            <span class="fi-size">{{ formatSize(selectedFile.size) }}</span>
+            <button class="fi-remove" @click="clearFile">移除</button>
+        </div>
+
+        <!-- actions -->
+        <div class="btn-row">
+            <button class="btn btn-primary" @click="startDecrypt" :disabled="!selectedFile || processing">
+                {{ processing ? '处理中...' : '开始解密' }}
+            </button>
+            <button class="btn btn-ghost" @click="showHelp = true">使用帮助</button>
+        </div>
+
+        <!-- key input -->
+        <div class="key-section" v-if="showKeyInput && !processing">
+            <p class="key-label">未检测到密钥文件，请手动输入（可选）</p>
+            <div class="key-row">
+                <input type="text" v-model="manualKey" placeholder="输入8位十六进制密钥，如 38383332"
+                maxlength="16" @input="sanitizeKeyInput">
+            </div>
+        </div>
+
+        <!-- progress -->
+        <div class="progress-wrap" v-if="processing">
+            <div class="progress-bar-outer">
+                <div class="progress-bar-inner" :style="{ width: progressPercent + '%' }"></div>
+            </div>
+            <div class="progress-meta">
+                <span>{{ progressStatus }}</span>
+                <span>{{ progressPercent }}%</span>
+            </div>
+            <div class="progress-file" v-if="currentFilePath">{{ currentFilePath }}</div>
+        </div>
+
+        <!-- result -->
+        <div class="result-box" :class="resultType" v-if="resultVisible">
+            <h3>{{ resultType === 'success' ? '解密成功' : '解密失败' }}</h3>
+            <template v-if="resultType === 'success' && resultData">
+                <div class="detail-row">已解密文件：<strong>{{ resultData.decryptedCount }}</strong> / {{ resultData.totalFiles }}</div>
+                <div class="detail-row">文件大小：<strong>{{ formatSize(resultData.fileSize) }}</strong></div>
+                <div class="detail-row">耗时：<strong>{{ resultData.duration }} 秒</strong></div>
+                <div class="key-block" v-if="resultData.keyHex">
+                    <span class="key-val">{{ resultData.keyHex }}</span>
+                    <button class="copy-btn" @click="copyKey(resultData.keyHex, $event)">复制密钥</button>
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:14px" @click="triggerDownload">
+                    下载 .mcworld 文件
+                </button>
+            </template>
+            <template v-if="resultType === 'error'">
+                <p style="color:var(--text-secondary)">{{ errorMessage }}</p>
+            </template>
+        </div>
+    </div>
+
+    <!-- ===== 广告占位（完全无特征，由 JS 动态填充） ===== -->
+    <div id="ad-stand" class="ad-holder"></div>
+
+    <!-- footer -->
+    <div class="footer-bar">
+        <button class="icon-btn" @click="showAbout = true" title="关于">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+        <span class="footer-divider"></span>
+        <button class="icon-btn" @click="toggleTheme" :title="theme === 'dark' ? '切换亮色' : '切换暗色'">
+            <svg v-if="theme === 'dark'" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg v-else viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+    </div>
+
+    <!-- help modal -->
+    <teleport to="body">
+        <div class="modal-mask" v-if="showHelp" @click.self="showHelp = false">
+            <div class="modal-content">
+                <button class="modal-close" @click="showHelp = false">&times;</button>
+                <h2>使用帮助</h2>
+                <ol>
+                    <li><strong>上传文件</strong>——点击上传区域或拖拽 .zip 格式的存档文件</li>
+                    <li><strong>输入密钥</strong>（可选）——如果检测到缺少密钥文件，可手动输入8位十六进制密钥</li>
+                    <li><strong>开始解密</strong>——点击按钮，等待处理完成</li>
+                    <li><strong>下载文件</strong>——解密成功后，点击下载按钮获取 .mcworld 文件</li>
+                </ol>
+                <p style="margin-top:10px;font-size:0.82rem;color:var(--text-tertiary)">
+                    提示：部分存档可能因文件损坏或缺少必要数据而无法解密。所有处理在浏览器本地完成，不会上传任何数据。
+                </p>
+                <div class="modal-footer-btns">
+                    <button class="btn btn-primary btn-sm" @click="showHelp = false">知道了</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+
+    <!-- about modal -->
+    <teleport to="body">
+        <div class="modal-mask" v-if="showAbout" @click.self="showAbout = false">
+            <div class="modal-content" style="text-align:center">
+                <button class="modal-close" @click="showAbout = false">&times;</button>
+                <h2>关于本工具</h2>
+                <p>版本 1.0.0</p>
+                <p>基于 JavaScript 与 JSZip 构建，无需服务器端处理。</p>
+                <p style="font-size:0.8rem;color:var(--text-tertiary);margin-top:10px">
+                    解密算法参考 XOR-MC-Archive-Decrypt 开源项目。<br>所有操作在浏览器本地完成，保护您的隐私。
+                </p>
+                <div class="modal-footer-btns" style="justify-content:center">
+                    <button class="btn btn-primary btn-sm" @click="showAbout = false">关闭</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+
+    <!-- download confirm (manual key) -->
+    <teleport to="body">
+        <div class="confirm-overlay" v-if="showDownloadConfirm" @click.self="showDownloadConfirm = false">
+            <div class="confirm-dialog">
+                <p><strong>提示</strong><br>当前解密使用的是手动输入的密钥，本工具无法保证该密钥的正确性。如果下载的文件无法使用，请检查密钥后重试。</p>
+                <p style="color:#7c3aed;font-weight:600">是否继续下载？</p>
+                <div class="cf-btns">
+                    <button class="btn btn-ghost btn-sm" @click="showDownloadConfirm = false">取消</button>
+                    <button class="btn btn-primary btn-sm" @click="doDownload">继续下载</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+
+    <!-- warning confirm (integrity issues) -->
+    <teleport to="body">
+        <div class="confirm-overlay" v-if="showWarningConfirm" @click.self="showWarningConfirm = false">
+            <div class="confirm-dialog">
+                <p><strong>检测到以下问题</strong></p>
+                <div style="text-align:left;font-size:0.85rem;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
+                    <div v-for="(issue, i) in pendingIssues" :key="i" style="margin-bottom:6px">
+                        &bull; {{ issue.message }}<br>
+                        <small style="color:var(--text-tertiary)">{{ issue.consequence }}</small>
+                    </div>
+                </div>
+                <p style="color:#f59e0b;font-weight:600;font-size:0.88rem">强行继续可能导致异常，是否继续？</p>
+                <div class="cf-btns">
+                    <button class="btn btn-ghost btn-sm" @click="resolveWarning(false)">取消</button>
+                    <button class="btn btn-primary btn-sm" @click="resolveWarning(true)">继续</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+</div>
+
+<script>
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+
+    createApp({
+        setup() {
+            // ==================== 核心工具 ====================
+            const CryptoUtils = {
+                DEFAULT_KEY: [0x38, 0x38, 0x33, 0x32, 0x39, 0x38, 0x35, 0x31],
+                MAGIC_NUMBER: [0x80, 0x1D, 0x30, 0x01],
+                MAGIC_NUMBER_ALT: [0x90, 0x1D, 0x30, 0x01],
+
+                isEncrypted(data) {
+                    if (data.length < 4) return false;
+                    return (
+                        (data[0] === this.MAGIC_NUMBER[0] && data[1] === this.MAGIC_NUMBER[1] &&
+                            data[2] === this.MAGIC_NUMBER[2] && data[3] === this.MAGIC_NUMBER[3]) ||
+                        (data[0] === this.MAGIC_NUMBER_ALT[0] && data[1] === this.MAGIC_NUMBER_ALT[1] &&
+                            data[2] === this.MAGIC_NUMBER_ALT[2] && data[3] === this.MAGIC_NUMBER_ALT[3])
+                    );
+                },
+
+                decrypt(data, key) {
+                    if (!this.isEncrypted(data)) throw new Error('文件未加密');
+                    const keyBytes = key || this.DEFAULT_KEY;
+                    const encrypted = data.slice(4);
+                    const out = new Uint8Array(encrypted.length);
+                    for (let i = 0; i < encrypted.length; i++) {
+                        out[i] = encrypted[i] ^ keyBytes[i % keyBytes.length];
+                    }
+                    return out;
+                },
+
+                deriveKey(manifestFileName, currentFileData) {
+                    const currentData = currentFileData.slice(4, 20);
+                    const manifestBytes = [...manifestFileName].map(c => c.charCodeAt(0));
+                    manifestBytes.push(10);
+                    if (currentData.length !== manifestBytes.length) return null;
+                    const derived = [];
+                    for (let i = 0; i < currentData.length; i++) {
+                        derived[i] = currentData[i] ^ manifestBytes[i];
+                    }
+                    const first8 = derived.slice(0, 8);
+                    const last8 = derived.slice(8);
+                    for (let i = 0; i < 8; i++) {
+                        if (first8[i] !== last8[i]) return null;
+                    }
+                    return first8;
+                },
+
+                hexToBytes(hex) {
+                    const bytes = [];
+                    for (let i = 0; i < hex.length; i += 2) {
+                        bytes.push(parseInt(hex.substr(i, 2), 16));
+                    }
+                    return bytes;
+                },
+
+                bytesToHex(bytes) {
+                    return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+            };
+
+            const FileProcessor = {
+                isNestedPath(zip) {
+                    const files = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+                    if (files.length === 0) return false;
+                    const hasRootFiles = files.some(p => !p.includes('/'));
+                    if (hasRootFiles) return false;
+                    const folders = new Set();
+                    files.forEach(p => folders.add(p.split('/')[0]));
+                    if (folders.size === 1) {
+                        const root = Array.from(folders)[0];
+                        return !files.includes(root);
+                    }
+                    return false;
+                },
+
+                async removeNestedPath(zip) {
+                    const newZip = new JSZip();
+                    const files = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+                    if (files.length === 0) return newZip;
+                    const folders = new Set();
+                    files.forEach(p => folders.add(p.split('/')[0]));
+                    const rootFolder = Array.from(folders)[0];
+                    for (const path in zip.files) {
+                        const f = zip.files[path];
+                        if (!f.dir) {
+                            const data = await f.async('uint8array');
+                            if (path.startsWith(rootFolder + '/')) {
+                                newZip.file(path.substring(rootFolder.length + 1), data);
+                            } else {
+                                newZip.file(path, data);
+                            }
+                        } else if (path.startsWith(rootFolder + '/')) {
+                            const sub = path.substring(rootFolder.length + 1);
+                            if (sub && sub !== '') newZip.folder(sub);
+                        }
+                    }
+                    return newZip;
+                },
+
+                checkIntegrity(zip) {
+                    const issues = [];
+                    const files = Object.keys(zip.files);
+                    const dbFiles = files.filter(f => f.startsWith('db/'));
+                    const hasLevelDat = files.includes('level.dat') || files.includes('level.dat_old');
+                    const hasLevelname = files.includes('levelname.txt');
+                    if (!hasLevelDat) issues.push({ message: '缺少 level.dat 等核心存档文件',
+                        consequence: '可能导致解密失败或存档数据丢失' });
+                    if (!hasLevelname) issues.push({ message: '缺少 levelname.txt',
+                        consequence: '可能导致解密失败或存档数据丢失' });
+                    if (dbFiles.length > 0) {
+                        const hasLdb = dbFiles.some(f => f.endsWith('.ldb'));
+                        const hasCurrent = dbFiles.includes('db/CURRENT');
+                        const hasManifest = dbFiles.some(f => /MANIFEST-\d+/.test(f));
+                        if (!hasLdb) issues.push({ message: '缺少 .ldb 文件',
+                            consequence: '解密后存档可能恢复为原始种子状态' });
+                        const missingKey = [];
+                        if (!hasCurrent) missingKey.push('CURRENT');
+                        if (!hasManifest) missingKey.push('MANIFEST');
+                        if (missingKey.length > 0) issues.push({ message: '缺少密钥文件：' + missingKey.join(
+                                '、'), consequence: '无法自动识别密钥，需要手动输入' });
+                    } else {
+                        issues.push({ message: '缺少 db 文件夹', consequence: '无法进行解密操作' });
+                    }
+                    return issues;
+                },
+
+                modifyJsonHeaders(zip) {
+                    ['netease_world_behavior_packs.json', 'netease_world_resource_packs.json'].forEach(name => {
+                        const f = zip.file(name);
+                        if (f) {
+                            f.async('string').then(content => {
+                                if (content.startsWith('<netease_>')) {
+                                    zip.file(name, content.substring(10));
+                                }
+                            });
+                        }
+                    });
+                },
+
+                formatSize(bytes) {
+                    if (!bytes || bytes === 0) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+                }
+            };
+
+            // ==================== 响应式状态 ====================
+            const selectedFile = ref(null);
+            const isDragging = ref(false);
+            const processing = ref(false);
+            const showKeyInput = ref(false);
+            const manualKey = ref('');
+            const progressPercent = ref(0);
+            const progressStatus = ref('');
+            const currentFilePath = ref('');
+            const resultVisible = ref(false);
+            const resultType = ref('success');
+            const resultData = ref(null);
+            const errorMessage = ref('');
+            const decryptedBlob = ref(null);
+            const usedManualKey = ref(false);
+            const showHelp = ref(false);
+            const showAbout = ref(false);
+            const showDownloadConfirm = ref(false);
+            const showWarningConfirm = ref(false);
+            const pendingIssues = ref([]);
+            const theme = ref(localStorage.getItem('mcxor_theme') || 'light');
+            const fileInputRef = ref(null);
+            let warningResolver = null;
+
+            // ==================== 方法 ====================
+            function triggerFileInput() {
+                if (fileInputRef.value) fileInputRef.value.click();
+            }
+
+            function onFilePicked(e) {
+                const f = e.target.files[0];
+                if (f) setFile(f);
+            }
+
+            function handleDrop(e) {
+                isDragging.value = false;
+                const f = e.dataTransfer.files[0];
+                if (f) setFile(f);
+            }
+
+            function setFile(file) {
+                if (!file.name.toLowerCase().endsWith('.zip')) {
+                    errorMessage.value = '不支持该文件格式，请上传 .zip 压缩包';
+                    resultType.value = 'error';
+                    resultVisible.value = true;
+                    return;
+                }
+                selectedFile.value = file;
+                resultVisible.value = false;
+                showKeyInput.value = false;
+                decryptedBlob.value = null;
+                manualKey.value = '';
+            }
+
+            function clearFile() {
+                selectedFile.value = null;
+                resultVisible.value = false;
+                showKeyInput.value = false;
+                decryptedBlob.value = null;
+                manualKey.value = '';
+                if (fileInputRef.value) fileInputRef.value.value = '';
+                progressPercent.value = 0;
+                progressStatus.value = '';
+                currentFilePath.value = '';
+            }
+
+            function sanitizeKeyInput() {
+                manualKey.value = manualKey.value.replace(/[^0-9a-fA-F]/g, '');
+                if (manualKey.value.length > 16) manualKey.value = manualKey.value.slice(0, 16);
+            }
+
+            function formatSize(bytes) {
+                return FileProcessor.formatSize(bytes);
+            }
+
+            async function startDecrypt() {
+                if (!selectedFile.value || processing.value) return;
+                processing.value = true;
+                resultVisible.value = false;
+                decryptedBlob.value = null;
+                usedManualKey.value = false;
+                progressPercent.value = 0;
+                progressStatus.value = '准备中...';
+                currentFilePath.value = '';
+                const startTime = Date.now();
+
+                try {
+                    progressPercent.value = 8;
+                    progressStatus.value = '读取文件中...';
+                    currentFilePath.value = selectedFile.value.name;
+                    const buffer = await selectedFile.value.arrayBuffer();
+
+                    progressPercent.value = 18;
+                    progressStatus.value = '解压中...';
+                    let zip = await JSZip.loadAsync(buffer);
+
+                    progressPercent.value = 28;
+                    progressStatus.value = '检查文件结构...';
+                    if (FileProcessor.isNestedPath(zip)) {
+                        progressPercent.value = 33;
+                        progressStatus.value = '移除嵌套路径...';
+                        zip = await FileProcessor.removeNestedPath(zip);
+                    }
+
+                    progressPercent.value = 40;
+                    progressStatus.value = '清理多余文件...';
+                    ['behavior_packs/', 'netease_config/', 'resource_packs/'].forEach(folder => {
+                        if (zip.file(folder)) zip.remove(folder);
+                    });
+
+                    progressPercent.value = 50;
+                    progressStatus.value = '检查文件完整性...';
+                    const issues = FileProcessor.checkIntegrity(zip);
+                    const hasManualKey = manualKey.value.trim().length > 0;
+                    const missingKeyFiles = issues.some(i => i.type === 'missing_key_files' || i.message
+                        .includes('密钥文件'));
+                    if (missingKeyFiles && !hasManualKey) {
+                        showKeyInput.value = true;
+                    }
+                    let filteredIssues = issues;
+                    if (hasManualKey) {
+                        filteredIssues = issues.filter(i => !(i.type === 'missing_key_files' || i.message.includes(
+                            '密钥文件')));
+                    }
+                    if (filteredIssues.length > 0) {
+                        const ok = await showWarning(filteredIssues);
+                        if (!ok) {
+                            processing.value = false;
+                            progressPercent.value = 0;
+                            progressStatus.value = '';
+                            currentFilePath.value = '';
+                            return;
+                        }
+                    }
+
+                    progressPercent.value = 60;
+                    progressStatus.value = '处理文件头...';
+                    FileProcessor.modifyJsonHeaders(zip);
+
+                    progressPercent.value = 70;
+                    progressStatus.value = '获取解密密钥...';
+                    let key = null;
+                    const dbFiles = Object.keys(zip.files).filter(p => p.startsWith('db/'));
+                    const manifestFile = dbFiles.find(f => /MANIFEST-\d+/.test(f));
+                    const currentFile = dbFiles.find(f => f.endsWith('CURRENT'));
+                    if (manifestFile && currentFile) {
+                        const mData = await zip.file(manifestFile).async('uint8array');
+                        const cData = await zip.file(currentFile).async('uint8array');
+                        key = CryptoUtils.deriveKey(manifestFile.split('/').pop(), cData);
+                    }
+                    usedManualKey.value = !key;
+                    if (!key) {
+                        const mk = manualKey.value.trim();
+                        if (mk && mk.length === 16) {
+                            key = CryptoUtils.hexToBytes(mk);
+                            if (key.length !== 8) throw new Error('密钥长度不正确');
+                        } else if (mk && mk.length !== 16) {
+                            throw new Error('手动密钥格式错误，请输入8位十六进制密钥');
+                        } else {
+                            throw new Error('无法获取解密密钥，请手动输入8位十六进制密钥');
+                        }
+                    }
+
+                    progressPercent.value = 78;
+                    progressStatus.value = '解密文件中...';
+                    const newZip = new JSZip();
+                    let decryptedCount = 0;
+                    let processedCount = 0;
+                    const totalFiles = Object.keys(zip.files).filter(p => !zip.files[p].dir).length;
+                    let decryptErr = null;
+                    for (const path in zip.files) {
+                        try {
+                            const fData = await zip.files[path].async('uint8array');
+                            if (path.startsWith('db/') && CryptoUtils.isEncrypted(fData)) {
+                                const dec = CryptoUtils.decrypt(fData, key);
+                                newZip.file(path, dec);
+                                decryptedCount++;
+                            } else {
+                                newZip.file(path, fData);
+                            }
+                        } catch (err) {
+                            decryptErr = err;
+                            console.error('解密出错:', path, err);
+                        }
+                        processedCount++;
+                        progressPercent.value = 78 + Math.round((processedCount / totalFiles) * 16);
+                        currentFilePath.value = path;
+                    }
+                    if (usedManualKey.value && (decryptErr || decryptedCount === 0)) {
+                        const msg = decryptErr && decryptErr.message.includes('未加密') ?
+                            '手动输入的密钥不正确，文件未加密或密钥错误' :
+                            '手动输入的密钥可能不正确，解密出现错误';
+                        throw new Error(msg);
+                    }
+
+                    progressPercent.value = 95;
+                    progressStatus.value = '重新打包中...';
+                    currentFilePath.value = '';
+                    const blob = await newZip.generateAsync({ type: 'blob', compression: 'STORE' });
+                    decryptedBlob.value = blob;
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                    progressPercent.value = 100;
+                    progressStatus.value = '完成';
+                    resultData.value = {
+                        decryptedCount,
+                        totalFiles,
+                        fileSize: blob.size,
+                        duration,
+                        keyHex: CryptoUtils.bytesToHex(key)
+                    };
+                    resultType.value = 'success';
+                    resultVisible.value = true;
+                } catch (err) {
+                    console.error(err);
+                    resultType.value = 'error';
+                    errorMessage.value = err.message || '未知错误';
+                    resultVisible.value = true;
+                    progressPercent.value = 0;
+                    progressStatus.value = '';
+                    currentFilePath.value = '';
+                } finally {
+                    processing.value = false;
+                }
+            }
+
+            function showWarning(issues) {
+                return new Promise(resolve => {
+                    pendingIssues.value = issues;
+                    warningResolver = resolve;
+                    showWarningConfirm.value = true;
+                });
+            }
+
+            function resolveWarning(ok) {
+                showWarningConfirm.value = false;
+                if (warningResolver) {
+                    warningResolver(ok);
+                    warningResolver = null;
+                }
+            }
+
+            function triggerDownload() {
+                if (!decryptedBlob.value) return;
+                if (usedManualKey.value) {
+                    showDownloadConfirm.value = true;
+                } else {
+                    doDownload();
+                }
+            }
+
+            function doDownload() {
+                showDownloadConfirm.value = false;
+                if (!decryptedBlob.value) return;
+                const url = URL.createObjectURL(decryptedBlob.value);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Decrypted.mcworld';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 200);
+            }
+
+            function copyKey(keyHex, event) {
+                const btn = event.currentTarget;
+                const ta = document.createElement('textarea');
+                ta.value = keyHex;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, keyHex.length);
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) { /* fallback */ }
+                document.body.removeChild(ta);
+                if (ok && btn) {
+                    const orig = btn.textContent;
+                    btn.textContent = '已复制';
+                    btn.style.background = 'rgba(34,197,94,0.2)';
+                    btn.style.borderColor = '#22c55e';
+                    btn.style.color = '#16a34a';
+                    setTimeout(() => {
+                        btn.textContent = orig;
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                    }, 1800);
+                } else if (!ok) {
+                    alert('复制失败，请手动复制：\n' + keyHex);
+                }
+            }
+
+            function toggleTheme() {
+                theme.value = theme.value === 'dark' ? 'light' : 'dark';
+            }
+
+            // ==================== 广告加载（反拦截） ====================
+            function loadAd() {
+                // 使用随机 ID 和类名，避免特征检测
+                const rnd = Math.random().toString(36).substring(2, 8);
+                const containerId = 'a' + rnd;
+                const holder = document.getElementById('ad-stand');
+                if (!holder) return;
+
+                // 清空占位
+                holder.innerHTML = '';
+
+                // 创建外层容器（无任何广告特征）
+                const wrap = document.createElement('div');
+                wrap.id = containerId;
+                wrap.style.cssText =
+                    'width:100%;margin:0 auto;position:relative;display:flex;justify-content:center;align-items:center;min-height:60px;';
+
+                // 创建 iframe（核心广告）
+                const iframe = document.createElement('iframe');
+                // 使用 data-* 属性传递参数，而非直接暴露在 src 中（部分拦截器会扫描 src）
+                iframe.setAttribute('data-aa', '2444689');
+                // 通过 data 属性动态构建 src，避免静态特征
+                const adDomain = 'acceptable.a-ads.com';
+                const adPath = '/2444689/?size=Adaptive';
+                iframe.src = '//' + adDomain + adPath;
+                iframe.style.cssText =
+                    'border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:0 auto;background:transparent;';
+                iframe.setAttribute('loading', 'lazy');
+                iframe.setAttribute('referrerpolicy', 'no-referrer');
+
+                // 先添加一个占位背景，避免空白区域被拦截器识别为广告位
+                wrap.style.background = 'transparent';
+                wrap.appendChild(iframe);
+                holder.appendChild(wrap);
+
+                // 延迟后再次检查 iframe 是否被拦截，若被拦截则尝试重新加载（重试机制）
+                setTimeout(() => {
+                    try {
+                        const rect = iframe.getBoundingClientRect();
+                        // 如果 iframe 高度为 0 或宽度为 0，可能被拦截
+                        if (rect.height < 10 || rect.width < 10) {
+                            // 重新设置 src 尝试恢复
+                            iframe.src = '//' + adDomain + adPath + '&t=' + Date.now();
+                        }
+                    } catch (_) { /* ignore */ }
+                }, 1200);
+            }
+
+            // ==================== 生命周期 ====================
+            watch(theme, (val) => {
+                document.documentElement.setAttribute('data-theme', val);
+                localStorage.setItem('mcxor_theme', val);
+            }, { immediate: true });
+
+            function onKeydown(e) {
+                if (e.key === 'Escape') {
+                    showHelp.value = false;
+                    showAbout.value = false;
+                    showDownloadConfirm.value = false;
+                    if (showWarningConfirm.value) resolveWarning(false);
+                }
+            }
+
+            onMounted(() => {
+                document.addEventListener('keydown', onKeydown);
+                // 页面加载完成后延迟加载广告，避开拦截器的早期扫描
+                setTimeout(() => {
+                    loadAd();
+                }, 600);
+            });
+
+            // ==================== 导出 ====================
+            return {
+                selectedFile,
+                isDragging,
+                processing,
+                showKeyInput,
+                manualKey,
+                progressPercent,
+                progressStatus,
+                currentFilePath,
+                resultVisible,
+                resultType,
+                resultData,
+                errorMessage,
+                showHelp,
+                showAbout,
+                showDownloadConfirm,
+                showWarningConfirm,
+                pendingIssues,
+                theme,
+                fileInputRef,
+                triggerFileInput,
+                onFilePicked,
+                handleDrop,
+                clearFile,
+                sanitizeKeyInput,
+                formatSize,
+                startDecrypt,
+                triggerDownload,
+                doDownload,
+                copyKey,
+                toggleTheme,
+                resolveWarning,
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

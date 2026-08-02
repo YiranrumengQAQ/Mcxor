@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>MC存档解密工具</title>
+
+    <!-- ===== 依赖 ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js">
+    </script>
+
+    <!-- ===== Google Font & Material Symbols ===== -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1" />
+
+    <style>
+        /* ============================================================
+                   MATERIAL 3 设计令牌
+                   ============================================================ */
+        :root {
+            /* ----- 亮色 ----- */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-on-tertiary: #FFFFFF;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-on-tertiary-container: #31111D;
+
+            --md-sys-color-error: #BA1A1A;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-error-container: #FFDAD6;
+            --md-sys-color-on-error-container: #410002;
+
+            --md-sys-color-background: #FFFBFE;
+            --md-sys-color-on-background: #1D1B20;
+
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+
+            --md-sys-color-shadow: #000000;
+            --md-sys-color-surface-tint: #6750A4;
+
+            /* 组件专用 */
+            --md-card-bg: #FFFFFF;
+            --md-card-border: transparent;
+            --md-input-bg: #F5F5F5;
+            --md-input-text: #1D1B20;
+            --md-input-placeholder: #79747E;
+            --md-divider: #E7E0EC;
+            --md-scrollbar-thumb: rgba(103, 80, 164, 0.30);
+
+            /* 阴影 */
+            --md-elevation-1: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --md-elevation-2: 0 2px 6px 0 rgba(0, 0, 0, 0.10), 0 1px 4px 0 rgba(0, 0, 0, 0.06);
+            --md-elevation-3: 0 4px 12px 0 rgba(0, 0, 0, 0.08), 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+            --md-elevation-4: 0 8px 24px 0 rgba(0, 0, 0, 0.08), 0 4px 16px 0 rgba(0, 0, 0, 0.04);
+
+            /* 圆角 */
+            --md-radius-0: 0px;
+            --md-radius-1: 4px;
+            --md-radius-2: 8px;
+            --md-radius-3: 12px;
+            --md-radius-4: 16px;
+            --md-radius-5: 20px;
+            --md-radius-6: 28px;
+            --md-radius-full: 9999px;
+
+            /* 间距 */
+            --md-space-1: 4px;
+            --md-space-2: 8px;
+            --md-space-3: 12px;
+            --md-space-4: 16px;
+            --md-space-5: 20px;
+            --md-space-6: 24px;
+            --md-space-7: 32px;
+            --md-space-8: 40px;
+
+            /* 字体 */
+            --md-font-family: 'Roboto', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+            --md-font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+
+            /* 过渡 */
+            --md-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --md-transition-slow: 0.40s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* ----- 暗色 ----- */
+        [data-theme="dark"] {
+            --md-sys-color-primary: #D0BCFF;
+            --md-sys-color-on-primary: #381E72;
+            --md-sys-color-primary-container: #4F378B;
+            --md-sys-color-on-primary-container: #EADDFF;
+
+            --md-sys-color-secondary: #CCC2DC;
+            --md-sys-color-on-secondary: #332D41;
+            --md-sys-color-secondary-container: #4A4458;
+            --md-sys-color-on-secondary-container: #E8DEF8;
+
+            --md-sys-color-tertiary: #EFB8C8;
+            --md-sys-color-on-tertiary: #492532;
+            --md-sys-color-tertiary-container: #633B48;
+            --md-sys-color-on-tertiary-container: #FFD8E4;
+
+            --md-sys-color-error: #F2B8B5;
+            --md-sys-color-on-error: #601410;
+            --md-sys-color-error-container: #8C1D18;
+            --md-sys-color-on-error-container: #FFDAD6;
+
+            --md-sys-color-background: #141218;
+            --md-sys-color-on-background: #E6E0E9;
+
+            --md-sys-color-surface: #141218;
+            --md-sys-color-on-surface: #E6E0E9;
+            --md-sys-color-surface-variant: #49454F;
+            --md-sys-color-on-surface-variant: #CAC4D0;
+
+            --md-sys-color-outline: #938F99;
+            --md-sys-color-outline-variant: #49454F;
+
+            --md-sys-color-shadow: #000000;
+            --md-sys-color-surface-tint: #D0BCFF;
+
+            --md-card-bg: #1E1B24;
+            --md-card-border: rgba(255, 255, 255, 0.06);
+            --md-input-bg: #2B2933;
+            --md-input-text: #E6E0E9;
+            --md-input-placeholder: #938F99;
+            --md-divider: rgba(255, 255, 255, 0.08);
+            --md-scrollbar-thumb: rgba(208, 188, 255, 0.30);
+        }
+
+        /* ============================================================
+                   全局重置 & 基础
+                   ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--md-font-family);
+            background: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+            min-height: 100vh;
+            transition: background var(--md-transition-slow), color var(--md-transition-slow);
+            line-height: 1.5;
+            overflow-x: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--md-scrollbar-thumb);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(103, 80, 164, 0.50);
+        }
+
+        /* ============================================================
+                   App 容器
+                   ============================================================ */
+        #app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 var(--md-space-4) var(--md-space-6);
+        }
+
+        /* ============================================================
+                   AppBar (Material 3 Top App Bar)
+                   ============================================================ */
+        .m3-appbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--md-space-3) 0 var(--md-space-2);
+            min-height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: var(--md-sys-color-background);
+            transition: background var(--md-transition-slow);
+        }
+
+        .m3-appbar .appbar-leading {
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-2);
+        }
+
+        .m3-appbar .appbar-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--md-sys-color-on-background);
+            transition: color var(--md-transition-slow);
+        }
+
+        .m3-appbar .appbar-title .accent {
+            color: var(--md-sys-color-primary);
+        }
+
+        .m3-appbar .appbar-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-1);
+        }
+
+        .m3-icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background var(--md-transition), color var(--md-transition);
+            font-size: 1.3rem;
+            position: relative;
+        }
+
+        .m3-icon-btn:hover {
+            background: rgba(103, 80, 164, 0.08);
+        }
+        .m3-icon-btn:active {
+            background: rgba(103, 80, 164, 0.16);
+        }
+
+        .m3-icon-btn .material-symbols-outlined {
+            font-size: 24px;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0;
+        }
+
+        .m3-icon-btn .badge-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--md-sys-color-primary);
+            border: 2px solid var(--md-sys-color-background);
+        }
+
+        /* ============================================================
+                   AppBar 下方的小标签
+                   ============================================================ */
+        .app-subhead {
+            padding: 0 0 var(--md-space-4) 0;
+            font-size: 0.875rem;
+            color: var(--md-sys-color-on-surface-variant);
+            letter-spacing: 0.01em;
+            line-height: 1.4;
+            border-bottom: 1px solid var(--md-divider);
+            margin-bottom: var(--md-space-4);
+            transition: color var(--md-transition-slow), border-color var(--md-transition-slow);
+        }
+
+        /* ============================================================
+                   卡片 (Material 3 Card)
+                   ============================================================ */
+        .m3-card {
+            background: var(--md-card-bg);
+            border-radius: var(--md-radius-4);
+            border: 1px solid var(--md-card-border);
+            box-shadow: var(--md-elevation-1);
+            padding: var(--md-space-5) var(--md-space-5) var(--md-space-4);
+            transition: background var(--md-transition-slow), border-color var(--md-transition-slow),
+                box-shadow var(--md-transition);
+            margin-bottom: var(--md-space-4);
+            position: relative;
+        }
+
+        .m3-card:hover {
+            box-shadow: var(--md-elevation-2);
+        }
+
+        .m3-card .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-bottom: var(--md-space-3);
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-2);
+        }
+
+        .m3-card .card-title .material-symbols-outlined {
+            font-size: 20px;
+            color: var(--md-sys-color-primary);
+        }
+
+        /* ============================================================
+                   上传区域 (M3 风格的拖拽区)
+                   ============================================================ */
+        .m3-upload-zone {
+            border: 2px dashed var(--md-sys-color-outline-variant);
+            border-radius: var(--md-radius-3);
+            padding: var(--md-space-6) var(--md-space-4);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--md-transition);
+            background: transparent;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .m3-upload-zone:hover {
+            border-color: var(--md-sys-color-primary);
+            background: rgba(103, 80, 164, 0.04);
+        }
+
+        .m3-upload-zone.drag-over {
+            border-color: var(--md-sys-color-primary);
+            border-style: solid;
+            background: rgba(103, 80, 164, 0.08);
+            box-shadow: 0 0 0 4px rgba(103, 80, 164, 0.12);
+        }
+
+        .m3-upload-zone .upload-icon-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(103, 80, 164, 0.10);
+            margin-bottom: var(--md-space-3);
+            transition: transform var(--md-transition);
+        }
+
+        .m3-upload-zone:hover .upload-icon-wrap {
+            transform: scale(1.04);
+        }
+
+        .m3-upload-zone .upload-icon-wrap .material-symbols-outlined {
+            font-size: 30px;
+            color: var(--md-sys-color-primary);
+        }
+
+        .m3-upload-zone .zone-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--md-sys-color-on-surface);
+            margin-bottom: var(--md-space-1);
+        }
+
+        .m3-upload-zone .zone-hint {
+            font-size: 0.875rem;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        #fileInputRef {
+            display: none;
+        }
+
+        /* ============================================================
+                   文件信息栏
+                   ============================================================ */
+        .m3-file-info {
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-3);
+            margin-top: var(--md-space-4);
+            padding: var(--md-space-3) var(--md-space-4);
+            background: rgba(103, 80, 164, 0.06);
+            border-radius: var(--md-radius-2);
+            border: 1px solid rgba(103, 80, 164, 0.14);
+            transition: all var(--md-transition);
+            flex-wrap: wrap;
+        }
+
+        .m3-file-info .fi-icon .material-symbols-outlined {
+            font-size: 22px;
+            color: var(--md-sys-color-primary);
+        }
+
+        .m3-file-info .fi-name {
+            flex: 1;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--md-sys-color-on-surface);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 60px;
+        }
+
+        .m3-file-info .fi-size {
+            font-size: 0.8rem;
+            color: var(--md-sys-color-on-surface-variant);
+            white-space: nowrap;
+        }
+
+        .m3-file-info .fi-remove {
+            flex-shrink: 0;
+            padding: 4px 14px;
+            font-size: 0.75rem;
+            border-radius: var(--md-radius-full);
+            border: 1px solid var(--md-sys-color-error-container);
+            background: rgba(186, 26, 26, 0.06);
+            color: var(--md-sys-color-error);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all var(--md-transition);
+            font-family: var(--md-font-family);
+        }
+
+        .m3-file-info .fi-remove:hover {
+            background: rgba(186, 26, 26, 0.14);
+        }
+
+        /* ============================================================
+                   M3 按钮
+                   ============================================================ */
+        .m3-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--md-space-2);
+            padding: 10px 24px;
+            border-radius: var(--md-radius-full);
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: var(--md-font-family);
+            cursor: pointer;
+            border: none;
+            transition: all var(--md-transition);
+            letter-spacing: 0.01em;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            text-decoration: none;
+            position: relative;
+            min-height: 48px;
+        }
+
+        .m3-btn:active {
+            transform: scale(0.97);
+        }
+
+        .m3-btn-filled {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            box-shadow: var(--md-elevation-1);
+        }
+
+        .m3-btn-filled:hover:not(:disabled) {
+            box-shadow: var(--md-elevation-2);
+            background: #7A5BB5;
+            transform: translateY(-1px);
+        }
+
+        .m3-btn-filled:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        .m3-btn-outlined {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            border: 1px solid var(--md-sys-color-outline);
+        }
+
+        .m3-btn-outlined:hover:not(:disabled) {
+            background: rgba(103, 80, 164, 0.06);
+            border-color: var(--md-sys-color-primary);
+        }
+
+        .m3-btn-text {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            padding: 10px 16px;
+            min-height: 40px;
+        }
+
+        .m3-btn-text:hover {
+            background: rgba(103, 80, 164, 0.08);
+        }
+
+        .m3-btn .material-symbols-outlined {
+            font-size: 20px;
+            font-variation-settings: 'FILL' 0, 'wght' 500;
+        }
+
+        .m3-btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .m3-btn-sm {
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            min-height: 36px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: var(--md-space-3);
+            margin-top: var(--md-space-4);
+            flex-wrap: wrap;
+        }
+
+        .btn-row .m3-btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        @media (max-width: 480px) {
+            .btn-row {
+                flex-direction: column;
+            }
+            .btn-row .m3-btn {
+                width: 100%;
+            }
+        }
+
+        /* ============================================================
+                   密钥输入 (M3 Text Field)
+                   ============================================================ */
+        .m3-key-section {
+            margin-top: var(--md-space-4);
+            padding: var(--md-space-4);
+            border-radius: var(--md-radius-3);
+            background: rgba(208, 188, 255, 0.06);
+            border: 1px solid rgba(208, 188, 255, 0.18);
+            transition: all var(--md-transition);
+        }
+
+        .m3-key-section .key-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-bottom: var(--md-space-2);
+        }
+
+        .m3-key-section .key-row {
+            display: flex;
+            gap: var(--md-space-3);
+        }
+
+        .m3-key-section .key-row .m3-text-field {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .m3-text-field {
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-2);
+            background: var(--md-input-bg);
+            border-radius: var(--md-radius-2);
+            border: 1px solid transparent;
+            padding: 0 var(--md-space-3);
+            transition: all var(--md-transition);
+            min-height: 48px;
+        }
+
+        .m3-text-field:focus-within {
+            border-color: var(--md-sys-color-primary);
+            box-shadow: 0 0 0 2px rgba(103, 80, 164, 0.16);
+        }
+
+        .m3-text-field input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            font-family: var(--md-font-mono);
+            color: var(--md-input-text);
+            outline: none;
+            letter-spacing: 0.04em;
+            min-width: 0;
+        }
+
+        .m3-text-field input::placeholder {
+            color: var(--md-input-placeholder);
+            letter-spacing: 0.02em;
+            font-family: var(--md-font-family);
+            font-weight: 400;
+        }
+
+        .m3-text-field .field-icon {
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .m3-key-section .key-row {
+                flex-direction: column;
+            }
+        }
+
+        /* ============================================================
+                   进度条 (M3 Linear Progress)
+                   ============================================================ */
+        .m3-progress-wrap {
+            margin-top: var(--md-space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--md-space-2);
+        }
+
+        .m3-progress-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(103, 80, 164, 0.16);
+            border-radius: var(--md-radius-full);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .m3-progress-track .m3-progress-indicator {
+            height: 100%;
+            background: var(--md-sys-color-primary);
+            border-radius: var(--md-radius-full);
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 0;
+        }
+
+        .m3-progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--md-sys-color-on-surface-variant);
+            gap: var(--md-space-2);
+            flex-wrap: wrap;
+        }
+
+        .m3-progress-file {
+            font-size: 0.75rem;
+            color: var(--md-sys-color-on-surface-variant);
+            opacity: 0.7;
+            word-break: break-all;
+            font-family: var(--md-font-mono);
+        }
+
+        /* ============================================================
+                   结果卡片 (M3 Card with state)
+                   ============================================================ */
+        .m3-result-card {
+            margin-top: var(--md-space-4);
+            padding: var(--md-space-4) var(--md-space-5);
+            border-radius: var(--md-radius-3);
+            border: 1px solid var(--md-divider);
+            transition: all var(--md-transition);
+            background: var(--md-card-bg);
+        }
+
+        .m3-result-card.success {
+            border-color: rgba(34, 197, 94, 0.30);
+            background: rgba(34, 197, 94, 0.04);
+        }
+
+        .m3-result-card.error {
+            border-color: rgba(186, 26, 26, 0.25);
+            background: rgba(186, 26, 26, 0.04);
+        }
+
+        .m3-result-card .result-header {
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-2);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: var(--md-space-3);
+        }
+
+        .m3-result-card .result-header .material-symbols-outlined {
+            font-size: 24px;
+        }
+
+        .m3-result-card.success .result-header {
+            color: #16A34A;
+        }
+        .m3-result-card.error .result-header {
+            color: #DC2626;
+        }
+
+        .m3-result-card .result-detail {
+            font-size: 0.875rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-bottom: var(--md-space-1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--md-space-1);
+            line-height: 1.6;
+        }
+
+        .m3-result-card .result-detail strong {
+            color: var(--md-sys-color-on-surface);
+            font-weight: 600;
+        }
+
+        /* 密钥展示块 */
+        .m3-key-block {
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-3);
+            background: rgba(103, 80, 164, 0.06);
+            border: 1px solid rgba(103, 80, 164, 0.16);
+            padding: var(--md-space-3) var(--md-space-4);
+            border-radius: var(--md-radius-2);
+            margin: var(--md-space-3) 0;
+            font-family: var(--md-font-mono);
+            font-size: 0.85rem;
+            word-break: break-all;
+            letter-spacing: 0.03em;
+            flex-wrap: wrap;
+        }
+
+        .m3-key-block .key-val {
+            flex: 1;
+            min-width: 60px;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .m3-key-block .copy-btn {
+            flex-shrink: 0;
+            padding: 4px 14px;
+            font-size: 0.75rem;
+            border-radius: var(--md-radius-full);
+            border: 1px solid rgba(103, 80, 164, 0.25);
+            background: rgba(103, 80, 164, 0.08);
+            color: var(--md-sys-color-primary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all var(--md-transition);
+            font-family: var(--md-font-family);
+            white-space: nowrap;
+        }
+
+        .m3-key-block .copy-btn:hover {
+            background: rgba(103, 80, 164, 0.18);
+        }
+
+        .m3-result-card .m3-btn {
+            margin-top: var(--md-space-3);
+        }
+
+        /* ============================================================
+                   底部操作栏 (M3 Bottom App Bar 简化版)
+                   ============================================================ */
+        .m3-bottom-bar {
+            position: fixed;
+            bottom: var(--md-space-4);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: var(--md-space-2);
+            background: var(--md-card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--md-divider);
+            border-radius: var(--md-radius-full);
+            padding: var(--md-space-1) var(--md-space-2);
+            box-shadow: var(--md-elevation-3);
+            z-index: 100;
+            transition: all var(--md-transition-slow);
+        }
+
+        .m3-bottom-bar .m3-icon-btn {
+            width: 38px;
+            height: 38px;
+        }
+
+        .m3-bottom-bar .m3-icon-btn .material-symbols-outlined {
+            font-size: 22px;
+        }
+
+        .m3-bottom-bar .divider {
+            width: 1px;
+            height: 24px;
+            background: var(--md-divider);
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 600px) {
+            .m3-bottom-bar {
+                padding: var(--md-space-1);
+                gap: var(--md-space-1);
+                bottom: var(--md-space-3);
+            }
+            .m3-bottom-bar .m3-icon-btn {
+                width: 34px;
+                height: 34px;
+            }
+            .m3-bottom-bar .m3-icon-btn .material-symbols-outlined {
+                font-size: 20px;
+            }
+        }
+
+        /* ============================================================
+                   广告占位 (完全无特征)
+                   ============================================================ */
+        .ad-stand {
+            width: 100%;
+            margin: var(--md-space-4) 0;
+            padding: 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--md-transition-slow);
+        }
+
+        .ad-stand iframe {
+            border: 0;
+            padding: 0;
+            width: 70%;
+            height: auto;
+            overflow: hidden;
+            display: block;
+            margin: 0 auto;
+            background: transparent;
+        }
+
+        @media (max-width: 600px) {
+            .ad-stand iframe {
+                width: 85%;
+            }
+        }
+
+        /* ============================================================
+                   弹窗 / Modal (M3 Dialog)
+                   ============================================================ */
+        .m3-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--md-space-4);
+            transition: opacity var(--md-transition-slow);
+        }
+
+        .m3-dialog {
+            background: var(--md-card-bg);
+            border-radius: var(--md-radius-4);
+            border: 1px solid var(--md-divider);
+            box-shadow: var(--md-elevation-4);
+            width: 100%;
+            max-width: 480px;
+            max-height: 82vh;
+            overflow-y: auto;
+            padding: var(--md-space-5) var(--md-space-6);
+            position: relative;
+            transition: transform var(--md-transition-slow);
+        }
+
+        .m3-dialog .dialog-close {
+            position: absolute;
+            top: var(--md-space-2);
+            right: var(--md-space-2);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--md-sys-color-on-surface-variant);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--md-transition);
+            font-size: 1.3rem;
+        }
+
+        .m3-dialog .dialog-close:hover {
+            background: rgba(103, 80, 164, 0.08);
+            color: var(--md-sys-color-primary);
+        }
+
+        .m3-dialog h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: var(--md-space-3);
+            color: var(--md-sys-color-on-surface);
+            letter-spacing: -0.01em;
+        }
+
+        .m3-dialog p,
+        .m3-dialog li {
+            font-size: 0.9rem;
+            color: var(--md-sys-color-on-surface-variant);
+            line-height: 1.7;
+        }
+
+        .m3-dialog ol {
+            padding-left: var(--md-space-5);
+            margin: var(--md-space-2) 0 var(--md-space-4);
+        }
+
+        .m3-dialog li {
+            margin-bottom: var(--md-space-1);
+        }
+
+        .m3-dialog .dialog-actions {
+            display: flex;
+            gap: var(--md-space-2);
+            justify-content: flex-end;
+            margin-top: var(--md-space-5);
+            flex-wrap: wrap;
+        }
+
+        .m3-dialog .dialog-actions .m3-btn {
+            min-width: 80px;
+        }
+
+        /* ============================================================
+                   确认弹窗 (Confirm Dialog)
+                   ============================================================ */
+        .m3-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--md-space-4);
+        }
+
+        .m3-confirm-dialog {
+            background: var(--md-card-bg);
+            border-radius: var(--md-radius-4);
+            border: 1px solid var(--md-divider);
+            box-shadow: var(--md-elevation-4);
+            padding: var(--md-space-5) var(--md-space-6);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .m3-confirm-dialog p {
+            font-size: 0.9rem;
+            color: var(--md-sys-color-on-surface-variant);
+            line-height: 1.6;
+            margin-bottom: var(--md-space-3);
+        }
+
+        .m3-confirm-dialog .confirm-actions {
+            display: flex;
+            gap: var(--md-space-2);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* ============================================================
+                   过渡动画
+                   ============================================================ */
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity var(--md-transition-slow), transform var(--md-transition-slow);
+        }
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(10px) scale(0.98);
+        }
+
+        /* ============================================================
+                   响应式微调
+                   ============================================================ */
+        @media (max-width: 600px) {
+            #app {
+                padding: 0 var(--md-space-3) var(--md-space-4);
+            }
+            .m3-appbar .appbar-title {
+                font-size: 1.05rem;
+            }
+            .m3-card {
+                padding: var(--md-space-4);
+                border-radius: var(--md-radius-3);
+            }
+            .m3-upload-zone {
+                padding: var(--md-space-5) var(--md-space-3);
+            }
+            .m3-upload-zone .upload-icon-wrap {
+                width: 48px;
+                height: 48px;
+            }
+            .m3-upload-zone .upload-icon-wrap .material-symbols-outlined {
+                font-size: 26px;
+            }
+            .m3-dialog {
+                padding: var(--md-space-4);
+                max-width: 95vw;
+            }
+            .m3-key-block {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--md-space-2);
+            }
+            .m3-key-block .copy-btn {
+                align-self: flex-start;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            #app {
+                max-width: 780px;
+            }
+        }
+
+        /* 工具类 */
+        .mt-2 {
+            margin-top: var(--md-space-2);
+        }
+        .mt-3 {
+            margin-top: var(--md-space-3);
+        }
+        .mt-4 {
+            margin-top: var(--md-space-4);
+        }
+        .text-center {
+            text-align: center;
+        }
+        .w-full {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+    VUE APP
+    ============================================================ -->
+    <div id="app">
+        <!-- ===== AppBar ===== -->
+        <header class="m3-appbar">
+            <div class="appbar-leading">
+                <span class="appbar-title">
+                    <span class="accent">MC</span>存档解密
+                </span>
+            </div>
+            <div class="appbar-actions">
+                <button class="m3-icon-btn" @click="toggleTheme" :title="theme === 'dark' ? '切换亮色' : '切换暗色'">
+                    <span class="material-symbols-outlined">
+                        {{ theme === 'dark' ? 'light_mode' : 'dark_mode' }}
+                    </span>
+                </button>
+                <button class="m3-icon-btn" @click="showHelp = true" title="使用帮助">
+                    <span class="material-symbols-outlined">help</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== 副标题 ===== -->
+        <div class="app-subhead">
+            安全快速 · 本地处理 · 支持批量解密
+        </div>
+
+        <!-- ===== 主卡片 ===== -->
+        <div class="m3-card">
+            <!-- 上传区域 -->
+            <div class="m3-upload-zone"
+            :class="{ 'drag-over': isDragging }"
+            @click="triggerFileInput"
+            @dragover.prevent="isDragging = true"
+            @dragleave.prevent="isDragging = false"
+            @drop.prevent="handleDrop">
+            <div class="upload-icon-wrap">
+                <span class="material-symbols-outlined">cloud_upload</span>
+            </div>
+            <p class="zone-title">点击或拖拽文件到此处</p>
+            <p class="zone-hint">仅支持 .zip 格式的存档文件</p>
+        </div>
+        <input type="file" id="fileInputRef" accept=".zip" @change="onFilePicked" ref="fileInputRef" />
+
+        <!-- 文件信息 -->
+        <div class="m3-file-info" v-if="selectedFile">
+            <span class="fi-icon"><span class="material-symbols-outlined">description</span></span>
+            <span class="fi-name">{{ selectedFile.name }}</span>
+            <span class="fi-size">{{ formatSize(selectedFile.size) }}</span>
+            <button class="fi-remove" @click="clearFile">移除</button>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="btn-row">
+            <button class="m3-btn m3-btn-filled" @click="startDecrypt" :disabled="!selectedFile || processing">
+                <span class="material-symbols-outlined" v-if="!processing">lock_open</span>
+                <span class="material-symbols-outlined" v-else>progress_activity</span>
+                {{ processing ? '处理中…' : '开始解密' }}
+            </button>
+            <button class="m3-btn m3-btn-outlined" @click="showHelp = true">
+                <span class="material-symbols-outlined">help_outline</span>
+                帮助
+            </button>
+        </div>
+
+        <!-- 密钥输入 -->
+        <div class="m3-key-section" v-if="showKeyInput && !processing">
+            <p class="key-label">
+                <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle">vpn_key</span>
+                未检测到密钥文件，请手动输入（可选）
+            </p>
+            <div class="key-row">
+                <div class="m3-text-field">
+                    <span class="field-icon material-symbols-outlined">key</span>
+                    <input type="text" v-model="manualKey" placeholder="8位十六进制密钥，如 38383332"
+                    maxlength="16" @input="sanitizeKeyInput" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 进度 -->
+        <div class="m3-progress-wrap" v-if="processing">
+            <div class="m3-progress-track">
+                <div class="m3-progress-indicator" :style="{ width: progressPercent + '%' }"></div>
+            </div>
+            <div class="m3-progress-meta">
+                <span>{{ progressStatus }}</span>
+                <span>{{ progressPercent }}%</span>
+            </div>
+            <div class="m3-progress-file" v-if="currentFilePath">{{ currentFilePath }}</div>
+        </div>
+
+        <!-- 结果 -->
+        <div class="m3-result-card" :class="resultType" v-if="resultVisible">
+            <div class="result-header">
+                <span class="material-symbols-outlined">
+                    {{ resultType === 'success' ? 'check_circle' : 'error' }}
+                </span>
+                {{ resultType === 'success' ? '解密成功' : '解密失败' }}
+            </div>
+
+            <template v-if="resultType === 'success' && resultData">
+                <div class="result-detail">
+                    已解密文件：<strong>{{ resultData.decryptedCount }}</strong> / {{ resultData.totalFiles }}
+                </div>
+                <div class="result-detail">
+                    文件大小：<strong>{{ formatSize(resultData.fileSize) }}</strong>
+                </div>
+                <div class="result-detail">
+                    耗时：<strong>{{ resultData.duration }} 秒</strong>
+                </div>
+
+                <div class="m3-key-block" v-if="resultData.keyHex">
+                    <span class="key-val">{{ resultData.keyHex }}</span>
+                    <button class="copy-btn" @click="copyKey(resultData.keyHex, $event)">复制密钥</button>
+                </div>
+
+                <button class="m3-btn m3-btn-filled m3-btn-block" @click="triggerDownload">
+                    <span class="material-symbols-outlined">download</span>
+                    下载 .mcworld 文件
+                </button>
+            </template>
+
+            <template v-if="resultType === 'error'">
+                <p style="color:var(--md-sys-color-on-surface-variant);font-size:0.9rem;">
+                    {{ errorMessage }}
+                </p>
+            </template>
+        </div>
+    </div>
+
+    <!-- ===== 广告占位 ===== -->
+    <div id="ad-stand" class="ad-stand"></div>
+
+    <!-- ===== 底部操作栏 ===== -->
+    <div class="m3-bottom-bar">
+        <button class="m3-icon-btn" @click="showAbout = true" title="关于">
+            <span class="material-symbols-outlined">info</span>
+        </button>
+        <span class="divider"></span>
+        <button class="m3-icon-btn" @click="toggleTheme" :title="theme === 'dark' ? '切换亮色' : '切换暗色'">
+            <span class="material-symbols-outlined">
+                {{ theme === 'dark' ? 'light_mode' : 'dark_mode' }}
+            </span>
+        </button>
+        <span class="divider"></span>
+        <button class="m3-icon-btn" @click="showHelp = true" title="帮助">
+            <span class="material-symbols-outlined">help_outline</span>
+        </button>
+    </div>
+
+    <!-- ===== 帮助弹窗 ===== -->
+    <teleport to="body">
+        <div class="m3-overlay" v-if="showHelp" @click.self="showHelp = false">
+            <div class="m3-dialog">
+                <button class="dialog-close" @click="showHelp = false">&times;</button>
+                <h2>使用帮助</h2>
+                <ol>
+                    <li><strong>上传文件</strong> — 点击上传区域或拖拽 .zip 格式的存档文件</li>
+                    <li><strong>输入密钥</strong>（可选）— 如果检测到缺少密钥文件，可手动输入8位十六进制密钥</li>
+                    <li><strong>开始解密</strong> — 点击按钮，等待处理完成</li>
+                    <li><strong>下载文件</strong> — 解密成功后，点击下载按钮获取 .mcworld 文件</li>
+                </ol>
+                <p style="font-size:0.82rem;color:var(--md-sys-color-on-surface-variant);">
+                    提示：部分存档可能因文件损坏或缺少必要数据而无法解密。所有处理在浏览器本地完成，不会上传任何数据。
+                </p>
+                <div class="dialog-actions">
+                    <button class="m3-btn m3-btn-filled m3-btn-sm" @click="showHelp = false">知道了</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+
+    <!-- ===== 关于弹窗 ===== -->
+    <teleport to="body">
+        <div class="m3-overlay" v-if="showAbout" @click.self="showAbout = false">
+            <div class="m3-dialog" style="text-align:center">
+                <button class="dialog-close" @click="showAbout = false">&times;</button>
+                <h2>关于本工具</h2>
+                <p style="margin-bottom:var(--md-space-1);">版本 1.0.0</p>
+                <p style="color:var(--md-sys-color-on-surface-variant);">
+                    基于 JavaScript 与 JSZip 构建，无需服务器端处理。
+                </p>
+                <p style="font-size:0.8rem;color:var(--md-sys-color-on-surface-variant);margin-top:var(--md-space-3);">
+                    解密算法参考 XOR-MC-Archive-Decrypt 开源项目。<br />
+                    所有操作在浏览器本地完成，保护您的隐私。
+                </p>
+                <div class="dialog-actions" style="justify-content:center">
+                    <button class="m3-btn m3-btn-filled m3-btn-sm" @click="showAbout = false">关闭</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+
+    <!-- ===== 下载确认弹窗 ===== -->
+    <teleport to="body">
+        <div class="m3-confirm-overlay" v-if="showDownloadConfirm" @click.self="showDownloadConfirm = false">
+            <div class="m3-confirm-dialog">
+                <p><strong>提示</strong></p>
+                <p>当前解密使用的是手动输入的密钥，本工具无法保证该密钥的正确性。如果下载的文件无法使用，请检查密钥后重试。</p>
+                <p style="color:var(--md-sys-color-primary);font-weight:600;">是否继续下载？</p>
+                <div class="confirm-actions">
+                    <button class="m3-btn m3-btn-outlined m3-btn-sm" @click="showDownloadConfirm = false">取消</button>
+                    <button class="m3-btn m3-btn-filled m3-btn-sm" @click="doDownload">继续下载</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+
+    <!-- ===== 警告确认弹窗 ===== -->
+    <teleport to="body">
+        <div class="m3-confirm-overlay" v-if="showWarningConfirm" @click.self="showWarningConfirm = false">
+            <div class="m3-confirm-dialog">
+                <p><strong>检测到以下问题</strong></p>
+                <div style="text-align:left;font-size:0.85rem;color:var(--md-sys-color-on-surface-variant);line-height:1.6;margin-bottom:var(--md-space-3);">
+                    <div v-for="(issue, i) in pendingIssues" :key="i" style="margin-bottom:var(--md-space-2);">
+                        &bull; {{ issue.message }}<br />
+                        <small style="color:var(--md-sys-color-on-surface-variant);opacity:0.7;">{{ issue.consequence }}</small>
+                    </div>
+                </div>
+                <p style="color:#F59E0B;font-weight:600;font-size:0.88rem;">强行继续可能导致异常，是否继续？</p>
+                <div class="confirm-actions">
+                    <button class="m3-btn m3-btn-outlined m3-btn-sm" @click="resolveWarning(false)">取消</button>
+                    <button class="m3-btn m3-btn-filled m3-btn-sm" @click="resolveWarning(true)">继续</button>
+                </div>
+            </div>
+        </div>
+    </teleport>
+</div>
+
+<!-- ============================================================
+VUE 3 脚本
+============================================================ -->
+<script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            // ==================== 核心工具 ====================
+            const CryptoUtils = {
+                DEFAULT_KEY: [0x38, 0x38, 0x33, 0x32, 0x39, 0x38, 0x35, 0x31],
+                MAGIC_NUMBER: [0x80, 0x1D, 0x30, 0x01],
+                MAGIC_NUMBER_ALT: [0x90, 0x1D, 0x30, 0x01],
+
+                isEncrypted(data) {
+                    if (data.length < 4) return false;
+                    return (
+                        (data[0] === this.MAGIC_NUMBER[0] && data[1] === this.MAGIC_NUMBER[1] &&
+                            data[2] === this.MAGIC_NUMBER[2] && data[3] === this.MAGIC_NUMBER[3]) ||
+                        (data[0] === this.MAGIC_NUMBER_ALT[0] && data[1] === this.MAGIC_NUMBER_ALT[1] &&
+                            data[2] === this.MAGIC_NUMBER_ALT[2] && data[3] === this.MAGIC_NUMBER_ALT[3])
+                    );
+                },
+
+                decrypt(data, key) {
+                    if (!this.isEncrypted(data)) throw new Error('文件未加密');
+                    const keyBytes = key || this.DEFAULT_KEY;
+                    const encrypted = data.slice(4);
+                    const out = new Uint8Array(encrypted.length);
+                    for (let i = 0; i < encrypted.length; i++) {
+                        out[i] = encrypted[i] ^ keyBytes[i % keyBytes.length];
+                    }
+                    return out;
+                },
+
+                deriveKey(manifestFileName, currentFileData) {
+                    const currentData = currentFileData.slice(4, 20);
+                    const manifestBytes = [...manifestFileName].map(c => c.charCodeAt(0));
+                    manifestBytes.push(10);
+                    if (currentData.length !== manifestBytes.length) return null;
+                    const derived = [];
+                    for (let i = 0; i < currentData.length; i++) {
+                        derived[i] = currentData[i] ^ manifestBytes[i];
+                    }
+                    const first8 = derived.slice(0, 8);
+                    const last8 = derived.slice(8);
+                    for (let i = 0; i < 8; i++) {
+                        if (first8[i] !== last8[i]) return null;
+                    }
+                    return first8;
+                },
+
+                hexToBytes(hex) {
+                    const bytes = [];
+                    for (let i = 0; i < hex.length; i += 2) {
+                        bytes.push(parseInt(hex.substr(i, 2), 16));
+                    }
+                    return bytes;
+                },
+
+                bytesToHex(bytes) {
+                    return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+            };
+
+            const FileProcessor = {
+                isNestedPath(zip) {
+                    const files = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+                    if (files.length === 0) return false;
+                    const hasRootFiles = files.some(p => !p.includes('/'));
+                    if (hasRootFiles) return false;
+                    const folders = new Set();
+                    files.forEach(p => folders.add(p.split('/')[0]));
+                    if (folders.size === 1) {
+                        const root = Array.from(folders)[0];
+                        return !files.includes(root);
+                    }
+                    return false;
+                },
+
+                async removeNestedPath(zip) {
+                    const newZip = new JSZip();
+                    const files = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+                    if (files.length === 0) return newZip;
+                    const folders = new Set();
+                    files.forEach(p => folders.add(p.split('/')[0]));
+                    const rootFolder = Array.from(folders)[0];
+                    for (const path in zip.files) {
+                        const f = zip.files[path];
+                        if (!f.dir) {
+                            const data = await f.async('uint8array');
+                            if (path.startsWith(rootFolder + '/')) {
+                                newZip.file(path.substring(rootFolder.length + 1), data);
+                            } else {
+                                newZip.file(path, data);
+                            }
+                        } else if (path.startsWith(rootFolder + '/')) {
+                            const sub = path.substring(rootFolder.length + 1);
+                            if (sub && sub !== '') newZip.folder(sub);
+                        }
+                    }
+                    return newZip;
+                },
+
+                checkIntegrity(zip) {
+                    const issues = [];
+                    const files = Object.keys(zip.files);
+                    const dbFiles = files.filter(f => f.startsWith('db/'));
+                    const hasLevelDat = files.includes('level.dat') || files.includes('level.dat_old');
+                    const hasLevelname = files.includes('levelname.txt');
+                    if (!hasLevelDat) issues.push({ message: '缺少 level.dat 等核心存档文件',
+                        consequence: '可能导致解密失败或存档数据丢失' });
+                    if (!hasLevelname) issues.push({ message: '缺少 levelname.txt',
+                        consequence: '可能导致解密失败或存档数据丢失' });
+                    if (dbFiles.length > 0) {
+                        const hasLdb = dbFiles.some(f => f.endsWith('.ldb'));
+                        const hasCurrent = dbFiles.includes('db/CURRENT');
+                        const hasManifest = dbFiles.some(f => /MANIFEST-\d+/.test(f));
+                        if (!hasLdb) issues.push({ message: '缺少 .ldb 文件',
+                            consequence: '解密后存档可能恢复为原始种子状态' });
+                        const missingKey = [];
+                        if (!hasCurrent) missingKey.push('CURRENT');
+                        if (!hasManifest) missingKey.push('MANIFEST');
+                        if (missingKey.length > 0) issues.push({ message: '缺少密钥文件：' + missingKey.join(
+                                '、'), consequence: '需要手动输入密钥' });
+                    } else {
+                        issues.push({ message: '缺少 db 文件夹', consequence: '无法进行解密操作' });
+                    }
+                    return issues;
+                },
+
+                modifyJsonHeaders(zip) {
+                    ['netease_world_behavior_packs.json', 'netease_world_resource_packs.json'].forEach(name => {
+                        const f = zip.file(name);
+                        if (f) {
+                            f.async('string').then(content => {
+                                if (content.startsWith('<netease_>')) {
+                                    zip.file(name, content.substring(10));
+                                }
+                            });
+                        }
+                    });
+                },
+
+                formatSize(bytes) {
+                    if (!bytes || bytes === 0) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+                }
+            };
+
+            // ==================== 响应式状态 ====================
+            const selectedFile = ref(null);
+            const isDragging = ref(false);
+            const processing = ref(false);
+            const showKeyInput = ref(false);
+            const manualKey = ref('');
+            const progressPercent = ref(0);
+            const progressStatus = ref('');
+            const currentFilePath = ref('');
+            const resultVisible = ref(false);
+            const resultType = ref('success');
+            const resultData = ref(null);
+            const errorMessage = ref('');
+            const decryptedBlob = ref(null);
+            const usedManualKey = ref(false);
+            const showHelp = ref(false);
+            const showAbout = ref(false);
+            const showDownloadConfirm = ref(false);
+            const showWarningConfirm = ref(false);
+            const pendingIssues = ref([]);
+            const theme = ref(localStorage.getItem('mcxor_theme') || 'light');
+            const fileInputRef = ref(null);
+            let warningResolver = null;
+
+            // ==================== 方法 ====================
+            function triggerFileInput() {
+                if (fileInputRef.value) fileInputRef.value.click();
+            }
+
+            function onFilePicked(e) {
+                const f = e.target.files[0];
+                if (f) setFile(f);
+            }
+
+            function handleDrop(e) {
+                isDragging.value = false;
+                const f = e.dataTransfer.files[0];
+                if (f) setFile(f);
+            }
+
+            function setFile(file) {
+                if (!file.name.toLowerCase().endsWith('.zip')) {
+                    errorMessage.value = '不支持该文件格式，请上传 .zip 压缩包';
+                    resultType.value = 'error';
+                    resultVisible.value = true;
+                    return;
+                }
+                selectedFile.value = file;
+                resultVisible.value = false;
+                showKeyInput.value = false;
+                decryptedBlob.value = null;
+                manualKey.value = '';
+            }
+
+            function clearFile() {
+                selectedFile.value = null;
+                resultVisible.value = false;
+                showKeyInput.value = false;
+                decryptedBlob.value = null;
+                manualKey.value = '';
+                if (fileInputRef.value) fileInputRef.value.value = '';
+                progressPercent.value = 0;
+                progressStatus.value = '';
+                currentFilePath.value = '';
+            }
+
+            function sanitizeKeyInput() {
+                manualKey.value = manualKey.value.replace(/[^0-9a-fA-F]/g, '');
+                if (manualKey.value.length > 16) manualKey.value = manualKey.value.slice(0, 16);
+            }
+
+            function formatSize(bytes) {
+                return FileProcessor.formatSize(bytes);
+            }
+
+            async function startDecrypt() {
+                if (!selectedFile.value || processing.value) return;
+                processing.value = true;
+                resultVisible.value = false;
+                decryptedBlob.value = null;
+                usedManualKey.value = false;
+                progressPercent.value = 0;
+                progressStatus.value = '准备中…';
+                currentFilePath.value = '';
+                const startTime = Date.now();
+
+                try {
+                    progressPercent.value = 8;
+                    progressStatus.value = '读取文件中…';
+                    currentFilePath.value = selectedFile.value.name;
+                    const buffer = await selectedFile.value.arrayBuffer();
+
+                    progressPercent.value = 18;
+                    progressStatus.value = '解压中…';
+                    let zip = await JSZip.loadAsync(buffer);
+
+                    progressPercent.value = 28;
+                    progressStatus.value = '检查文件结构…';
+                    if (FileProcessor.isNestedPath(zip)) {
+                        progressPercent.value = 33;
+                        progressStatus.value = '移除嵌套路径…';
+                        zip = await FileProcessor.removeNestedPath(zip);
+                    }
+
+                    progressPercent.value = 40;
+                    progressStatus.value = '清理多余文件…';
+                    ['behavior_packs/', 'netease_config/', 'resource_packs/'].forEach(folder => {
+                        if (zip.file(folder)) zip.remove(folder);
+                    });
+
+                    progressPercent.value = 50;
+                    progressStatus.value = '检查文件完整性…';
+                    const issues = FileProcessor.checkIntegrity(zip);
+                    const hasManualKey = manualKey.value.trim().length > 0;
+                    const missingKeyFiles = issues.some(i => i.message.includes('密钥文件'));
+                    if (missingKeyFiles && !hasManualKey) {
+                        showKeyInput.value = true;
+                    }
+                    let filteredIssues = issues;
+                    if (hasManualKey) {
+                        filteredIssues = issues.filter(i => !i.message.includes('密钥文件'));
+                    }
+                    if (filteredIssues.length > 0) {
+                        const ok = await showWarning(filteredIssues);
+                        if (!ok) {
+                            processing.value = false;
+                            progressPercent.value = 0;
+                            progressStatus.value = '';
+                            currentFilePath.value = '';
+                            return;
+                        }
+                    }
+
+                    progressPercent.value = 60;
+                    progressStatus.value = '处理文件头…';
+                    FileProcessor.modifyJsonHeaders(zip);
+
+                    progressPercent.value = 70;
+                    progressStatus.value = '获取解密密钥…';
+                    let key = null;
+                    const dbFiles = Object.keys(zip.files).filter(p => p.startsWith('db/'));
+                    const manifestFile = dbFiles.find(f => /MANIFEST-\d+/.test(f));
+                    const currentFile = dbFiles.find(f => f.endsWith('CURRENT'));
+                    if (manifestFile && currentFile) {
+                        const mData = await zip.file(manifestFile).async('uint8array');
+                        const cData = await zip.file(currentFile).async('uint8array');
+                        key = CryptoUtils.deriveKey(manifestFile.split('/').pop(), cData);
+                    }
+                    usedManualKey.value = !key;
+                    if (!key) {
+                        const mk = manualKey.value.trim();
+                        if (mk && mk.length === 16) {
+                            key = CryptoUtils.hexToBytes(mk);
+                            if (key.length !== 8) throw new Error('密钥长度不正确');
+                        } else if (mk && mk.length !== 16) {
+                            throw new Error('手动密钥格式错误，请输入8位十六进制密钥');
+                        } else {
+                            throw new Error('无法获取解密密钥，请手动输入8位十六进制密钥');
+                        }
+                    }
+
+                    progressPercent.value = 78;
+                    progressStatus.value = '解密文件中…';
+                    const newZip = new JSZip();
+                    let decryptedCount = 0;
+                    let processedCount = 0;
+                    const totalFiles = Object.keys(zip.files).filter(p => !zip.files[p].dir).length;
+                    let decryptErr = null;
+                    for (const path in zip.files) {
+                        try {
+                            const fData = await zip.files[path].async('uint8array');
+                            if (path.startsWith('db/') && CryptoUtils.isEncrypted(fData)) {
+                                const dec = CryptoUtils.decrypt(fData, key);
+                                newZip.file(path, dec);
+                                decryptedCount++;
+                            } else {
+                                newZip.file(path, fData);
+                            }
+                        } catch (err) {
+                            decryptErr = err;
+                            console.error('解密出错:', path, err);
+                        }
+                        processedCount++;
+                        progressPercent.value = 78 + Math.round((processedCount / totalFiles) * 16);
+                        currentFilePath.value = path;
+                    }
+                    if (usedManualKey.value && (decryptErr || decryptedCount === 0)) {
+                        const msg = decryptErr && decryptErr.message.includes('未加密') ?
+                            '手动输入的密钥不正确，文件未加密或密钥错误' :
+                            '手动输入的密钥可能不正确，解密出现错误';
+                        throw new Error(msg);
+                    }
+
+                    progressPercent.value = 95;
+                    progressStatus.value = '重新打包中…';
+                    currentFilePath.value = '';
+                    const blob = await newZip.generateAsync({ type: 'blob', compression: 'STORE' });
+                    decryptedBlob.value = blob;
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                    progressPercent.value = 100;
+                    progressStatus.value = '完成';
+                    resultData.value = {
+                        decryptedCount,
+                        totalFiles,
+                        fileSize: blob.size,
+                        duration,
+                        keyHex: CryptoUtils.bytesToHex(key)
+                    };
+                    resultType.value = 'success';
+                    resultVisible.value = true;
+                } catch (err) {
+                    console.error(err);
+                    resultType.value = 'error';
+                    errorMessage.value = err.message || '未知错误';
+                    resultVisible.value = true;
+                    progressPercent.value = 0;
+                    progressStatus.value = '';
+                    currentFilePath.value = '';
+                } finally {
+                    processing.value = false;
+                }
+            }
+
+            function showWarning(issues) {
+                return new Promise(resolve => {
+                    pendingIssues.value = issues;
+                    warningResolver = resolve;
+                    showWarningConfirm.value = true;
+                });
+            }
+
+            function resolveWarning(ok) {
+                showWarningConfirm.value = false;
+                if (warningResolver) {
+                    warningResolver(ok);
+                    warningResolver = null;
+                }
+            }
+
+            function triggerDownload() {
+                if (!decryptedBlob.value) return;
+                if (usedManualKey.value) {
+                    showDownloadConfirm.value = true;
+                } else {
+                    doDownload();
+                }
+            }
+
+            function doDownload() {
+                showDownloadConfirm.value = false;
+                if (!decryptedBlob.value) return;
+                const url = URL.createObjectURL(decryptedBlob.value);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Decrypted.mcworld';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 200);
+            }
+
+            function copyKey(keyHex, event) {
+                const btn = event.currentTarget;
+                const ta = document.createElement('textarea');
+                ta.value = keyHex;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, keyHex.length);
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) { /* fallback */ }
+                document.body.removeChild(ta);
+                if (ok && btn) {
+                    const orig = btn.textContent;
+                    btn.textContent = '已复制';
+                    btn.style.background = 'rgba(34,197,94,0.20)';
+                    btn.style.borderColor = '#22c55e';
+                    btn.style.color = '#16a34a';
+                    setTimeout(() => {
+                        btn.textContent = orig;
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                    }, 1800);
+                } else if (!ok) {
+                    alert('复制失败，请手动复制：\n' + keyHex);
+                }
+            }
+
+            function toggleTheme() {
+                theme.value = theme.value === 'dark' ? 'light' : 'dark';
+            }
+
+            // ==================== 广告加载 ====================
+            function loadAd() {
+                const rnd = Math.random().toString(36).substring(2, 8);
+                const containerId = 'a' + rnd;
+                const holder = document.getElementById('ad-stand');
+                if (!holder) return;
+                holder.innerHTML = '';
+                const wrap = document.createElement('div');
+                wrap.id = containerId;
+                wrap.style.cssText =
+                    'width:100%;margin:0 auto;position:relative;display:flex;justify-content:center;align-items:center;min-height:60px;';
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('data-aa', '2444689');
+                const adDomain = 'acceptable.a-ads.com';
+                const adPath = '/2444689/?size=Adaptive';
+                iframe.src = '//' + adDomain + adPath;
+                iframe.style.cssText =
+                    'border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:0 auto;background:transparent;';
+                iframe.setAttribute('loading', 'lazy');
+                iframe.setAttribute('referrerpolicy', 'no-referrer');
+                wrap.style.background = 'transparent';
+                wrap.appendChild(iframe);
+                holder.appendChild(wrap);
+                setTimeout(() => {
+                    try {
+                        const rect = iframe.getBoundingClientRect();
+                        if (rect.height < 10 || rect.width < 10) {
+                            iframe.src = '//' + adDomain + adPath + '&t=' + Date.now();
+                        }
+                    } catch (_) { /* ignore */ }
+                }, 1200);
+            }
+
+            // ==================== 生命周期 ====================
+            function onKeydown(e) {
+                if (e.key === 'Escape') {
+                    showHelp.value = false;
+                    showAbout.value = false;
+                    showDownloadConfirm.value = false;
+                    if (showWarningConfirm.value) resolveWarning(false);
+                }
+            }
+
+            onMounted(() => {
+                document.addEventListener('keydown', onKeydown);
+                // 主题初始
+                document.documentElement.setAttribute('data-theme', theme.value);
+                setTimeout(() => loadAd(), 600);
+            });
+
+            // 监听主题变化
+            const themeWatcher = (val) => {
+                document.documentElement.setAttribute('data-theme', val);
+                localStorage.setItem('mcxor_theme', val);
+            };
+            // 使用 watch 在 setup 中
+            const { watch } = Vue;
+            watch(theme, themeWatcher, { immediate: true });
+
+            // ==================== 导出 ====================
+            return {
+                selectedFile,
+                isDragging,
+                processing,
+                showKeyInput,
+                manualKey,
+                progressPercent,
+                progressStatus,
+                currentFilePath,
+                resultVisible,
+                resultType,
+                resultData,
+                errorMessage,
+                showHelp,
+                showAbout,
+                showDownloadConfirm,
+                showWarningConfirm,
+                pendingIssues,
+                theme,
+                fileInputRef,
+                triggerFileInput,
+                onFilePicked,
+                handleDrop,
+                clearFile,
+                sanitizeKeyInput,
+                formatSize,
+                startDecrypt,
+                triggerDownload,
+                doDownload,
+                copyKey,
+                toggleTheme,
+                resolveWarning,
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
